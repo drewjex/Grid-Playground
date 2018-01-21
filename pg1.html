@@ -19,12 +19,19 @@
         top:10;
         left: 10px;
       }
+      #toggleDraw {
+        position: fixed;
+        top:40;
+        left: 10;
+        padding:5px;
+      }
       </style>
     </head>
   
     <body>
       <canvas id="canvas"></canvas> 
       <div class='coordinates'></div> 
+      <button id='toggleDraw'>Drag Mode</button>
     </body>
   <script>
       var canvas;
@@ -41,6 +48,10 @@
       var heightView = heightViewOriginal;
 
       window.addEventListener("load",setup,false);
+      const button = document.querySelector('#toggleDraw');
+
+      let dragMode = true;
+      let lines = [];
 
       function setup() {
           canvas = document.getElementById("canvas");
@@ -58,6 +69,16 @@
           canvas.addEventListener("mouseup", handleMouseUp, false);
           canvas.addEventListener("mousewheel", handleMouseWheel, false); // mousewheel duplicates dblclick function
           canvas.addEventListener("DOMMouseScroll", handleMouseWheel, false); // for Firefox
+          
+          button.addEventListener("click", () => {
+            dragMode
+              ? dragMode = false
+              : dragMode = true
+
+            dragMode
+              ? button.innerHTML = "Drag Mode"
+              : button.innerHTML = "Draw Mode"
+          });
 
           draw();
       }
@@ -70,10 +91,21 @@
           ctx.fillStyle = "#ddd";
           ctx.fillRect(xleftView,ytopView, widthView,heightView);
           ctx.fillStyle = "blue";
-          ctx.fillRect(0.1,0.5,0.1,0.1);
+          ctx.fillRect(0.1,0.4,0.1,0.1);
           ctx.fillStyle = "red";
           ctx.fillRect(0.3,0.2,0.4,0.2);
+
           ctx.fill();
+
+          for (const line of lines) {
+            ctx.beginPath();
+            ctx.moveTo(line.xStart, line.yStart);
+            ctx.lineTo(line.xEnd, line.yEnd);
+            ctx.lineCap="round";
+            ctx.strokeStyle = "purple"; //getRandomColor()
+            ctx.lineWidth = .01; //getRandomArbitrary(1, 10)
+            ctx.stroke();
+          }
       }
 
       function handleDblClick(event) {
@@ -87,10 +119,10 @@
           heightView *= scale;
 
           if (widthView > widthViewOriginal || heightView > heightViewOriginal) {
-          widthView = widthViewOriginal;
-          heightView = heightViewOriginal;
-          x = widthView/2;
-          y = heightView/2;
+              widthView = widthViewOriginal;
+              heightView = heightViewOriginal;
+              x = widthView/2;
+              y = heightView/2;
           }
 
           xleftView = x - widthView/2;
@@ -115,17 +147,33 @@
 
           var X = event.clientX - this.offsetLeft - this.clientLeft + this.scrollLeft;
           var Y = event.clientY - this.offsetTop - this.clientTop + this.scrollTop;
+          var x = X/widthCanvas * widthView + xleftView;  // View coordinates
+          var y = Y/heightCanvas * heightView + ytopView;
+
 
           if (mouseDown) {
+            if (dragMode) {
               var dx = (X - lastX) / widthCanvas * widthView;
               var dy = (Y - lastY)/ heightCanvas * heightView;
-          xleftView -= dx;
-          ytopView -= dy;
+              xleftView -= dx;
+              ytopView -= dy;
+            } else {
+              lines.push({
+                xStart : lastx,
+                yStart  : lasty,
+                xEnd : x,
+                yEnd : y
+              });
+            }
           }
+
           lastX = X;
           lastY = Y;
 
-          document.querySelector(".coordinates").innerHTML = `X: ${lastX} Y: ${lastY}`;
+          lastx = x;
+          lasty = y;
+
+          document.querySelector(".coordinates").innerHTML = `X: ${Math.round(x*100)} Y: ${Math.round(y*100)}`;
 
           draw();
       }
