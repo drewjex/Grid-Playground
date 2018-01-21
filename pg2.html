@@ -1,0 +1,49 @@
+<html>
+    <head>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+        }
+        html,body{
+            width:100%;
+            height:100%;
+        }
+      </style>
+    </head>
+    <body>
+      <canvas id="grid" onmousedown="mousedown(event)" ontouchstart="mousedown(event)" ontouchend="mouseup(event)" onmouseup="mouseup(event)" onmousemove="mousemove(event)">
+      </canvas>
+    </body>
+    <script>
+        var c = document.getElementById("grid")
+        var canvas = c.getContext("2d");
+        var x = 0;
+        var y = 0;
+        var down = false;
+        function mousedown(event){
+            down = true;
+        }
+        function mouseup(event){
+            down = false;
+        }
+        function mousemove(event){
+            if(down){
+                x+=event.movementX;
+                y+=event.movementY;
+            }
+        }
+        function paint(){
+        canvas.canvas.width = window.innerWidth;
+        canvas.canvas.height = window.innerHeight;
+        canvas.fillStyle = "#000000";
+        canvas.fillRect(0,0,canvas.canvas.width,canvas.canvas.height);
+        canvas.fillStyle = "#FF00FF";
+        canvas.fillRect(canvas.canvas.width/2+x-50,canvas.canvas.height/2+y-50,100,100);
+        requestAnimationFrame(paint);
+        }
+        requestAnimationFrame(paint);
+    </script>
+  </html>
