@@ -33,6 +33,7 @@
       <div class='coordinates'></div> 
       <button id='toggleDraw'>Drag Mode</button>
     </body>
+  <script src="socket.io/socket.io.js"></script>
   <script>
       var canvas;
       var ctx;
@@ -50,6 +51,9 @@
       window.addEventListener("load",setup,false);
       const button = document.querySelector('#toggleDraw');
 
+      //var socketIo = require('socket.io');
+      var socket  = io.connect();
+      
       let dragMode = true;
       let lines = [];
 
@@ -69,7 +73,9 @@
           canvas.addEventListener("mouseup", handleMouseUp, false);
           canvas.addEventListener("mousewheel", handleMouseWheel, false); // mousewheel duplicates dblclick function
           canvas.addEventListener("DOMMouseScroll", handleMouseWheel, false); // for Firefox
-          
+          canvas.ontouchmove = canvas.onmousemove;
+          canvas.ontouchstart = canvas.onmousedown;
+
           button.addEventListener("click", () => {
             dragMode
               ? dragMode = false
@@ -107,6 +113,11 @@
             ctx.stroke();
           }
       }
+
+      socket.on('draw_line', function (data) {
+          lines.push(data.line);
+          draw();
+      });
 
       function handleDblClick(event) {
           var X = event.clientX - this.offsetLeft - this.clientLeft + this.scrollLeft; //Canvas coordinates
@@ -158,12 +169,19 @@
               xleftView -= dx;
               ytopView -= dy;
             } else {
-              lines.push({
+              // lines.push({
+              //   xStart : lastx,
+              //   yStart  : lasty,
+              //   xEnd : x,
+              //   yEnd : y
+              // });
+
+              socket.emit('draw_line', { line: {
                 xStart : lastx,
                 yStart  : lasty,
                 xEnd : x,
                 yEnd : y
-              });
+              }});
             }
           }
 
@@ -179,8 +197,13 @@
       }
 
       function handleMouseWheel(event) {
-          var x = widthView/2 + xleftView;  // View coordinates
-          var y = heightView/2 + ytopView;
+           var x = widthView/2 + xleftView;  // View coordinates
+           var y = heightView/2 + ytopView;
+
+          // var X = event.clientX - this.offsetLeft - this.clientLeft + this.scrollLeft; //Canvas coordinates
+          // var Y = event.clientY - this.offsetTop - this.clientTop + this.scrollTop;
+          // var x = X/widthCanvas * widthView + xleftView;  // View coordinates
+          // var y = Y/heightCanvas * heightView + ytopView;
 
           var scale = (event.wheelDelta < 0 || event.detail > 0) ? 1.1 : 0.9;
           widthView *= scale;
