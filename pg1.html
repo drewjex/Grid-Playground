@@ -169,13 +169,6 @@
               xleftView -= dx;
               ytopView -= dy;
             } else {
-              // lines.push({
-              //   xStart : lastx,
-              //   yStart  : lasty,
-              //   xEnd : x,
-              //   yEnd : y
-              // });
-
               socket.emit('draw_line', { line: {
                 xStart : lastx,
                 yStart  : lasty,
@@ -193,7 +186,7 @@
 
           document.querySelector(".coordinates").innerHTML = `X: ${Math.round(x*100)} Y: ${Math.round(y*100)}`;
 
-          draw();
+          dragMode && draw();
       }
 
       function handleMouseWheel(event) {
