@@ -1,0 +1,249 @@
+<html>
+  <head>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+      }
+      canvas {
+        position: absolute;
+        top:0;
+        bottom:0;
+        left: 0;
+        right:0;
+        image-rendering: optimizeSpeed;            
+        image-rendering: -moz-crisp-edges;          
+        image-rendering: -webkit-optimize-contrast; 
+        image-rendering: -o-crisp-edges;            
+        image-rendering: crisp-edges;               
+        -ms-interpolation-mode: nearest-neighbor;   
+      }
+
+    .coordinates {
+        position: fixed;
+        top:10;
+        left: 10px;
+      }
+      #toggleDraw {
+        position: fixed;
+        top:40;
+        left: 10;
+        padding:5px;
+      }
+      </style>
+    </head>
+  
+    <body>
+      <canvas id="canvas1"></canvas> 
+      <div class='coordinates'></div> 
+      <button id='toggleDraw'>Drag Mode</button>
+    </body>
+  <script src="socket.io/socket.io.js"></script>
+  <script>
+      var canvas;
+      var ctx;
+      var widthCanvas;
+      var heightCanvas;
+
+      // View parameters
+      var xleftView = 0;
+      var ytopView = 0;
+      var widthViewOriginal = 1.0;           //actual width and height of zoomed and panned display
+      var heightViewOriginal = 1.0;
+      var widthView = widthViewOriginal;           //actual width and height of zoomed and panned display
+      var heightView = heightViewOriginal;
+
+      window.addEventListener("load",setup,false);
+      const button = document.querySelector('#toggleDraw');
+
+      //var socketIo = require('socket.io');
+      var socket  = io.connect();
+      
+      let dragMode = true;
+      let lines = [];
+
+      var offCanvas = document.createElement('canvas');
+      offCanvas.width = document.body.clientWidth;
+      offCanvas.height = document.body.clientHeight;
+      var offctx = offCanvas.getContext('2d');
+
+      var gkhead = new Image;
+
+      function setup() {
+          canvas = document.getElementById("canvas1");
+          ctx = canvas.getContext("2d");
+
+          canvas.width = document.body.clientWidth; //document.width is obsolete
+          canvas.height = document.body.clientHeight; //document.height is obsolete
+
+          widthCanvas = canvas.width;
+          heightCanvas = canvas.height;
+
+          canvas.addEventListener("dblclick", handleDblClick, false);  // dblclick to zoom in at point, shift dblclick to zoom out.
+          canvas.addEventListener("mousedown", handleMouseDown, false); // click and hold to pan
+          canvas.addEventListener("mousemove", handleMouseMove, false);
+          canvas.addEventListener("mouseup", handleMouseUp, false);
+          canvas.addEventListener("mousewheel", handleMouseWheel, false); // mousewheel duplicates dblclick function
+          canvas.addEventListener("DOMMouseScroll", handleMouseWheel, false); // for Firefox
+          canvas.ontouchmove = canvas.onmousemove;
+          canvas.ontouchstart = canvas.onmousedown;
+
+          button.addEventListener("click", () => {
+            dragMode
+              ? dragMode = false
+              : dragMode = true
+
+            dragMode
+              ? button.innerHTML = "Drag Mode"
+              : button.innerHTML = "Draw Mode"
+          });
+
+          gkhead.width = '1px';
+          gkhead.height = '1px';
+
+          requestAnimationFrame(draw);
+
+          //drawExisting();
+      }
+
+      function drawExisting() {
+
+          // offctx.setTransform(1,0,0,1,0,0);
+          // offctx.scale(widthCanvas/widthView, heightCanvas/heightView);
+          // offctx.translate(-xleftView,-ytopView);
+          //offctx.imageSmoothingEnabled = false;
+          // offctx.fillStyle = "blue";
+          // offctx.fillRect(0.1,0.4,0.1,0.1);
+          offctx.fillStyle = "red";
+          offctx.fillRect(0.3,0.25,0.4,0.2);
+          //offctx.fill();
+      }
+
+      function draw() {
+          ctx.setTransform(1,0,0,1,0,0);
+          ctx.scale(widthCanvas/widthView, heightCanvas/heightView);
+          ctx.translate(-xleftView,-ytopView);
+          ctx.imageSmoothingEnabled = false;
+
+          ctx.clearRect(xleftView,ytopView, widthView,heightView);
+          ctx.fillStyle = "#ddd";
+          ctx.fillRect(xleftView,ytopView, widthView,heightView);
+
+          //ctx.fill();
+
+          // ctx.save();
+          // ctx.clearRect(0,0,canvas.width,canvas.height);
+          // ctx.restore();
+
+          ctx.drawImage(gkhead,0,0, .5, .5);
+
+          ctx.drawImage(offCanvas, 0, 0);
+
+          ctx.beginPath();
+          for (const line of lines) {
+            ctx.moveTo(line.xStart, line.yStart);
+            ctx.lineTo(line.xEnd, line.yEnd);
+            ctx.lineCap="round";
+            ctx.strokeStyle = "purple"; //getRandomColor()
+            ctx.lineWidth = .01; //getRandomArbitrary(1, 10)
+          }
+          ctx.stroke();
+
+          requestAnimationFrame(draw);
+      }
+
+      requestAnimationFrame(draw);
+
+      socket.on('draw_line', function (data) {
+          lines.push(data.line);
+      });
+
+      gkhead.src = 'http://universe.byu.edu/wp-content/uploads/2015/11/Modern-Sailor-Cougar1.jpg';
+
+      function handleDblClick(event) {
+          var X = event.clientX - this.offsetLeft - this.clientLeft + this.scrollLeft; //Canvas coordinates
+          var Y = event.clientY - this.offsetTop - this.clientTop + this.scrollTop;
+          var x = X/widthCanvas * widthView + xleftView;  // View coordinates
+          var y = Y/heightCanvas * heightView + ytopView;
+
+          var scale = event.shiftKey == 1 ? 1.5 : 0.5; // shrink (1.5) if shift key pressed
+          widthView *= scale;
+          heightView *= scale;
+
+          if (widthView > widthViewOriginal || heightView > heightViewOriginal) {
+              widthView = widthViewOriginal;
+              heightView = heightViewOriginal;
+              x = widthView/2;
+              y = heightView/2;
+          }
+
+          xleftView = x - widthView/2;
+          ytopView = y - heightView/2;
+      }
+
+      var mouseDown = false;
+
+      function handleMouseDown(event) {
+          mouseDown = true;
+      }
+
+      function handleMouseUp(event) {
+          mouseDown = false;
+      }
+
+      var lastX = 0;
+      var lastY = 0;
+      function handleMouseMove(event) {
+
+          var X = event.clientX - this.offsetLeft - this.clientLeft + this.scrollLeft;
+          var Y = event.clientY - this.offsetTop - this.clientTop + this.scrollTop;
+          var x = X/widthCanvas * widthView + xleftView;  // View coordinates
+          var y = Y/heightCanvas * heightView + ytopView;
+
+
+          if (mouseDown) {
+            if (dragMode) {
+              var dx = (X - lastX) / widthCanvas * widthView;
+              var dy = (Y - lastY)/ heightCanvas * heightView;
+              xleftView -= dx;
+              ytopView -= dy;
+            } else {
+              socket.emit('draw_line', { line: {
+                xStart : lastx,
+                yStart  : lasty,
+                xEnd : x,
+                yEnd : y
+              }});
+            }
+          }
+
+          lastX = X;
+          lastY = Y;
+
+          lastx = x;
+          lasty = y;
+
+          document.querySelector(".coordinates").innerHTML = `X: ${Math.round(x*100)} Y: ${Math.round(y*100)}`;
+      }
+
+      function handleMouseWheel(event) {
+           var x = widthView/2 + xleftView;  // View coordinates
+           var y = heightView/2 + ytopView;
+
+          // var X = event.clientX - this.offsetLeft - this.clientLeft + this.scrollLeft; //Canvas coordinates
+          // var Y = event.clientY - this.offsetTop - this.clientTop + this.scrollTop;
+          // var x = X/widthCanvas * widthView + xleftView;  // View coordinates
+          // var y = Y/heightCanvas * heightView + ytopView;
+
+          var scale = (event.wheelDelta < 0 || event.detail > 0) ? 1.1 : 0.9;
+          widthView *= scale;
+          heightView *= scale;
+
+          // scale about center of view, rather than mouse position. This is different than dblclick behavior.
+          xleftView = x - widthView/2;
+          ytopView = y - heightView/2;
+      }
+  </script>
+</html>
