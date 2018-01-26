@@ -129,12 +129,12 @@
                 if (dragMode) {
                     ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
                 } else {
-                    lines.push({
-                        xStart : lastx,
-                        yStart  : lasty,
-                        xEnd : pt.x,
-                        yEnd : pt.y
-                    });
+		    socket.emit('draw_line', { line: {
+			xStart : lastx,
+			yStart  : lasty,
+			xEnd : pt.x,
+			yEnd : pt.y
+	      	    }});
                 }
             }
 
