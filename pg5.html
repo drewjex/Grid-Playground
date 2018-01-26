@@ -7,119 +7,155 @@
           box-sizing: border-box;
           font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
         }
-        canvas { background:#fff; position: absolute;
-        top:0;
-        bottom:0;
-        left: 0;
-        right:0; }
+        canvas { 
+            background:#fff; 
+            position: absolute;
+            top:0;
+            bottom:0;
+            left: 0;
+            right:0; 
+        }
+        .coordinates {
+            position: fixed;
+            top:10;
+            left: 10px;
+        }
+        #toggleDraw {
+            position: fixed;
+            top:40;
+            left: 10;
+            padding:5px;
+        }
       </style>
     </head>
     <body>
-            <canvas></canvas>
+        <canvas></canvas>
+        <div class='coordinates'></div> 
+        <button id='toggleDraw'>Drag Mode</button>
     </body>
+    <script src="socket.io/socket.io.js"></script>
     <script>
         
-	var canvas = document.getElementsByTagName('canvas')[0];
-
-	var gkhead = new Image;
-
-var lines = [];
+    var canvas = document.getElementsByTagName('canvas')[0];
+    let socket  = io.connect();
+    let byulogo = new Image;
+    byulogo.src = 'http://universe.byu.edu/wp-content/uploads/2015/11/Modern-Sailor-Cougar1.jpg';
+    const button = document.querySelector('#toggleDraw');
 
 	window.onload = function(){		
-        canvas.width = document.body.clientWidth; //document.width is obsolete
-          canvas.height = document.body.clientHeight; //document.height is obsolete
-
-		    var ctx = canvas.getContext('2d');
-		    trackTransforms(ctx);
-		  
-    function redraw(){
-
-          // Clear the entire canvas
-          var p1 = ctx.transformedPoint(0,0);
-          var p2 = ctx.transformedPoint(canvas.width,canvas.height);
-          ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
-
-          ctx.save();
-          ctx.setTransform(1,0,0,1,0,0);
-          ctx.clearRect(0,0,canvas.width,canvas.height);
-          ctx.restore();
-
-          ctx.drawImage(gkhead,0,0);
+        let lastx = 0;
+        let lasty = 0;
       
-      ctx.beginPath();
-          for (const line of lines) {
-            ctx.moveTo(line.xStart, line.yStart);
-            ctx.lineTo(line.xEnd, line.yEnd);
-            ctx.lineCap="round";
-            ctx.strokeStyle = "purple"; //getRandomColor()
-            ctx.lineWidth = 2; //getRandomArbitrary(1, 10)
-          }
-          ctx.stroke();
+        let dragMode = true;
 
+        let lines = [];
+
+        canvas.width = document.body.clientWidth; //document.width is obsolete
+        canvas.height = document.body.clientHeight; //document.height is obsolete
+
+        var ctx = canvas.getContext('2d');
+        trackTransforms(ctx);
+
+        requestAnimationFrame(redraw);
+
+        canvas.ontouchmove = canvas.onmousemove;
+        canvas.ontouchstart = canvas.onmousedown;
+
+        button.addEventListener("click", () => {
+            dragMode
+              ? dragMode = false
+              : dragMode = true
+
+            dragMode
+              ? button.innerHTML = "Drag Mode"
+              : button.innerHTML = "Draw Mode"
+          });
+		  
+        function redraw(){
+            var p1 = ctx.transformedPoint(0,0);
+            var p2 = ctx.transformedPoint(canvas.width,canvas.height);
+            ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
+
+            ctx.save();
+            ctx.setTransform(1,0,0,1,0,0);
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.restore();
+
+            ctx.drawImage(byulogo,0,0);
+        
+            ctx.beginPath();
+            for (const line of lines) {
+                ctx.moveTo(line.xStart, line.yStart);
+                ctx.lineTo(line.xEnd, line.yEnd);
+                ctx.lineCap="round";
+                ctx.strokeStyle = "purple"; 
+                ctx.lineWidth = 10; 
+            }
+            ctx.stroke();
+
+            requestAnimationFrame(redraw);
         }
-        redraw();
 
-      var lastX=canvas.width/2, lastY=canvas.height/2;
+        var lastX=canvas.width/2, lastY=canvas.height/2;
 
-      var dragStart,dragged;
+        var dragStart,dragged;
 
-      canvas.addEventListener('mousedown',function(evt){
-          document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
-          lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-          lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
-          dragStart = ctx.transformedPoint(lastX,lastY);
-          dragged = false;
-      },false);
+        canvas.addEventListener('mousedown',function(evt){
+            document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
+            lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+            lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+            dragStart = ctx.transformedPoint(lastX,lastY);
+            dragged = false;
+        },false);
 
-      var lastx = 0;
-      var lasty = 0;
-      canvas.addEventListener('mousemove',function(evt){
-          lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-          lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
-          dragged = true;
-          if (dragStart){
+        canvas.addEventListener('mousemove',function(evt){
+            lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+            lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+            dragged = true;
             var pt = ctx.transformedPoint(lastX,lastY);
-            //ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
-            lines.push({
-                xStart : lastx,
-                yStart  : lasty,
-                xEnd : pt.x,
-                yEnd : pt.y
-             });
-            
+            if (dragStart){
+                if (dragMode) {
+                    ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
+                } else {
+                    lines.push({
+                        xStart : lastx,
+                        yStart  : lasty,
+                        xEnd : pt.x,
+                        yEnd : pt.y
+                    });
+                }
+            }
+
             lastx = pt.x;
             lasty = pt.y;
-            redraw();
-                }
-      },false);
 
-      canvas.addEventListener('mouseup',function(evt){
-          dragStart = null;
-          if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
-      },false);
+            document.querySelector(".coordinates").innerHTML = `X: ${Math.round(pt.x)} Y: ${Math.round(pt.y)}`;
+        },false);
 
-      var scaleFactor = 1.1;
+        canvas.addEventListener('mouseup',function(evt){
+            dragStart = null;
+            if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
+        },false);
 
-      var zoom = function(clicks){
-          var pt = ctx.transformedPoint(lastX,lastY);
-          ctx.translate(pt.x,pt.y);
-          var factor = Math.pow(scaleFactor,clicks);
-          ctx.scale(factor,factor);
-          ctx.translate(-pt.x,-pt.y);
-          redraw();
-      }
+        var scaleFactor = 1.1;
 
-      var handleScroll = function(evt){
-          var delta = evt.wheelDelta ? evt.wheelDelta/40 : evt.detail ? -evt.detail : 0;
-          if (delta) zoom(delta);
-          return evt.preventDefault() && false;
-      };
-    
-      canvas.addEventListener('DOMMouseScroll',handleScroll,false);
-      canvas.addEventListener('mousewheel',handleScroll,false);
+        var zoom = function(clicks){
+            var pt = ctx.transformedPoint(lastX,lastY);
+            ctx.translate(pt.x,pt.y);
+            var factor = Math.pow(scaleFactor,clicks);
+            ctx.scale(factor,factor);
+            ctx.translate(-pt.x,-pt.y);
+        }
+
+        var handleScroll = function(evt){
+            var delta = evt.wheelDelta ? evt.wheelDelta/40 : evt.detail ? -evt.detail : 0;
+            if (delta) zoom(delta);
+            return evt.preventDefault() && false;
+        };
+        
+        canvas.addEventListener('DOMMouseScroll',handleScroll,false);
+        canvas.addEventListener('mousewheel',handleScroll,false);
 	};
-
-	gkhead.src = 'http://universe.byu.edu/wp-content/uploads/2015/11/Modern-Sailor-Cougar1.jpg';
 	
 	// Adds ctx.getTransform() - returns an SVGMatrix
 	// Adds ctx.transformedPoint(x,y) - returns an SVGPoint
