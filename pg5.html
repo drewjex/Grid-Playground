@@ -1,5 +1,7 @@
 <html>
     <head>
+      <!-- <link rel="stylesheet" href="fontawesome/web-fonts-with-css/css/font-awesome.min.css"> -->
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
       <style>
         * {
           margin: 0;
@@ -51,16 +53,29 @@
 	window.onload = function(){		
         let lastx = 0;
         let lasty = 0;
+
+        let uuid = guid();
       
         let dragMode = true;
 
         let lines = [];
+        let cursors = [];
+        let current = [];
+
+        var scaleFactor = 1.1;
+
+        var lastX=canvas.width/2, lastY=canvas.height/2;
+
+        var dragStart,dragged;
 
         canvas.width = document.body.clientWidth; //document.width is obsolete
         canvas.height = document.body.clientHeight; //document.height is obsolete
 
         var ctx = canvas.getContext('2d');
         trackTransforms(ctx);
+
+        let myCursor = ctx.transformedPoint(lastX,lastY);
+        let counter = 0;
 
         requestAnimationFrame(redraw);
 
@@ -88,7 +103,6 @@
             ctx.restore();
 
             ctx.drawImage(byulogo,0,0);
-
             ctx.drawImage(video,1500,300);
         
             ctx.beginPath();
@@ -101,16 +115,50 @@
             }
             ctx.stroke();
 
+            drawCursors();
+
             requestAnimationFrame(redraw);
         }
-
-        var lastX=canvas.width/2, lastY=canvas.height/2;
-
-        var dragStart,dragged;
 		
-	socket.on('draw_line', function (data) {
-          lines.push(data.line);
+	    socket.on('draw_line', function (data) {
+            lines.push(data.line);
       	});
+
+        socket.on('move_cursor', function(data) {
+            let index = cursors.findIndex( x => x.source == data.cursor.source);
+            if (index != -1) {
+                cursors[index] = data.cursor;
+            } else {
+                cursors.push(data.cursor);
+            }
+        });
+
+        function drawCursors() {
+            for (const cursor of cursors) {
+                if (cursor.source == uuid)
+                    continue;
+
+                ctx.font='30px FontAwesome';
+                if (cursor.isDragMode) {
+                    ctx.fillText('\uF047',cursor.x,cursor.y);
+                } else {
+                    ctx.fillText('\uF0a5',cursor.x,cursor.y);
+                }
+            }
+        }
+
+        function getRandomArbitrary(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+        
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF'.split('');
+            var color = '#';
+            for (var i = 0; i < 6; i++ ) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
 
         canvas.addEventListener('mousedown',function(evt){
             document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
@@ -129,14 +177,24 @@
                 if (dragMode) {
                     ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
                 } else {
-		    socket.emit('draw_line', { line: {
-			xStart : lastx,
-			yStart  : lasty,
-			xEnd : pt.x,
-			yEnd : pt.y
-	      	    }});
+                socket.emit('draw_line', { line: {
+                    xStart : lastx,
+                    yStart  : lasty,
+                    xEnd : pt.x,
+                    yEnd : pt.y
+                }});
                 }
             }
+
+            socket.emit('move_cursor', { cursor: {
+                x : pt.x,
+                y : pt.y,
+                source : uuid,
+                isDragMode: dragMode
+            }});
+
+            myCursor.x = pt.x;
+            myCursor.y = pt.y;
 
             lastx = pt.x;
             lasty = pt.y;
@@ -144,12 +202,20 @@
             document.querySelector(".coordinates").innerHTML = `X: ${Math.round(pt.x)} Y: ${Math.round(pt.y)}`;
         },false);
 
+        function guid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+            }
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+                s4() + '-' + s4() + s4() + s4();
+        }
+
         canvas.addEventListener('mouseup',function(evt){
             dragStart = null;
             if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
         },false);
-
-        var scaleFactor = 1.1;
 
         var zoom = function(clicks){
             var pt = ctx.transformedPoint(lastX,lastY);
