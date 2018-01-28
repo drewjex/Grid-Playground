@@ -34,11 +34,6 @@
         <canvas></canvas>
         <div class='coordinates'></div> 
         <button id='toggleDraw'>Drag Mode</button>
-        <video id="video1" width="270" autoplay style='display:none;'>
-            <source src="http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4" type='video/mp4'>
-            <!-- <source src="mov_bbb.ogg" type='video/ogg'>
-            <source src="mov_bbb.webm" type='video/webm'> -->
-          </video>
     </body>
     <script src="socket.io/socket.io.js"></script>
     <script>
@@ -46,7 +41,9 @@
     var canvas = document.getElementsByTagName('canvas')[0];
     let socket  = io.connect();
     let byulogo = new Image;
-    var video = document.getElementById("video1");
+    var video = document.createElement("video");
+    video.src = "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4";
+    video.play()
     byulogo.src = 'http://universe.byu.edu/wp-content/uploads/2015/11/Modern-Sailor-Cougar1.jpg';
     const button = document.querySelector('#toggleDraw');
 
