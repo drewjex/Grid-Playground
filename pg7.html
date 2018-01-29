@@ -46,7 +46,8 @@
         ctx.fillStyle = "black";
         ctx.fillRect(0,0,1,1);
         ctx.fillStyle = "red";
-        ctx.fillRect(offsetx-(1/12)**zoom,offsety-(1/12)**zoom,(1/12)**zoom*2,(1/12)**zoom*2);
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillRect(canvas.width/2-10,canvas.height/2-10,20,20);
         requestAnimationFrame(repaint);
       }
       function mousedown(evt){
