@@ -34,20 +34,20 @@
       var last_mouse_y = 0; 
       function repaint(){
         canvas.width = document.body.clientWidth;
-        canvas.height = document.body.clientHeight;
+        canvas.height = document.body.clientHeight;//setting the canvas render height and width to the correct values
         ctx.setTransform(1,0,0,1,0,0);
         ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.translate(canvas.width/2,canvas.height/2); //make the center of the screen 0,0
         ctx.scale(canvas.height,canvas.height);//make 1 canvas unit equal one grid unit
         ctx.scale((1/3)**zoom,(1/3)**zoom)//zoom to specified zoom level, where zoom level of 1 means 3 grid squares fit in the vertical area of the screen
-        ctx.translate(-offsetx,-offsety);
+        ctx.translate(-offsetx,-offsety);//translate to offset
         ctx.fillStyle = "blue";
-        ctx.fillRect(-gridx,-gridy,1,1)
+        ctx.fillRect(-gridx,-gridy,1,1)//simulate rendering a different grid
         ctx.fillStyle = "black";
-        ctx.fillRect(0,0,1,1);
+        ctx.fillRect(0,0,1,1);//simulate rendering the current grid
         ctx.fillStyle = "red";
         ctx.setTransform(1,0,0,1,0,0);
-        ctx.fillRect(canvas.width/2-10,canvas.height/2-10,20,20);
+        ctx.fillRect(canvas.width/2-10,canvas.height/2-10,20,20);//reticle for visualization
         requestAnimationFrame(repaint);
       }
       function mousedown(evt){
@@ -64,26 +64,24 @@
       }
       function mousemove(evt){
         if(mouse_down){
-          offsetx -= (evt.clientX - last_mouse_x)/(canvas.height*(1/3)**zoom);
-          offsety -= (evt.clientY - last_mouse_y)/(canvas.height*(1/3)**zoom);
+          offsetx -= (evt.clientX - last_mouse_x)/(canvas.height*(1/3)**zoom);//adjust for current zoom level
+          offsety -= (evt.clientY - last_mouse_y)/(canvas.height*(1/3)**zoom);//adjust for current zoom level
           last_mouse_x = evt.clientX;
           last_mouse_y = evt.clientY;
-          gridx += Math.floor(offsetx)
-          gridy += Math.floor(offsety)
-          offsetx -= Math.floor(offsetx)
-          offsety -= Math.floor(offsety)
+          gridx += Math.floor(offsetx)//Adjust the current grid square if offsetx gets outside of [0,1)
+          gridy += Math.floor(offsety)//Adjust the current grid square if offsety gets outside of [0,1)
+          offsetx -= Math.floor(offsetx)//Reset the offset if the grid square changed
+          offsety -= Math.floor(offsety)//Reset the offset if the grid square changed
         }
       }
       function mousewheel(evt){
-        zoom += evt.deltaY/1000;
+        zoom += evt.deltaY/1000;//Change zoom level according to mouse wheel
       }
       canvas.addEventListener("mousedown",mousedown);
       canvas.addEventListener("mouseup",mouseup);
       canvas.addEventListener("mousemove",mousemove);
       canvas.addEventListener("wheel",mousewheel);
       window.onload = function(){
-        //setting the canvas render height and width to the correct values
-        
         requestAnimationFrame(repaint);
       }
     </script>
