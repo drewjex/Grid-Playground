@@ -1,0 +1,88 @@
+<html>
+    <head>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+        }
+        canvas { 
+            background:#fff; 
+            position: absolute;
+            top:0;
+            bottom:0;
+            left: 0;
+            right:0; 
+        }
+      </style>
+    </head>
+    <body>
+      <canvas></canvas>
+    </body>
+    <script>
+      var canvas = document.getElementsByTagName("canvas")[0];
+      var ctx = canvas.getContext("2d");
+      var gridx = 0;
+      var gridy = 0;
+      var gridsize = 1;
+      var zoom = 1;
+      var offsetx = 0;
+      var offsety = 0;
+      var mouse_down = false;
+      var last_mouse_x = 0;
+      var last_mouse_y = 0; 
+      function repaint(){
+        canvas.width = document.body.clientWidth;
+        canvas.height = document.body.clientHeight;
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillStyle = "black";
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.translate(canvas.width/2,canvas.height/2); //make the center of the screen 0,0
+        ctx.scale(canvas.height,canvas.height);//make 1 canvas unit equal one grid unit
+        ctx.scale((1/3)**zoom,(1/3)**zoom)
+        ctx.translate(-offsetx,-offsety);
+        ctx.fillRect(0,0,1,1);
+        ctx.fillStyle = "green";
+        ctx.fillRect(0,0,gridx/10,0.1);
+        ctx.fillRect(0,0.1,gridy/10,0.1);
+        requestAnimationFrame(repaint);
+      }
+      function mousedown(evt){
+        if(evt.button == 0){
+          mouse_down = true;
+          last_mouse_x = evt.clientX;
+          last_mouse_y = evt.clientY;
+        }
+      }
+      function mouseup(evt){
+        if(evt.button == 0){
+          mouse_down = false;
+        }
+      }
+      function mousemove(evt){
+        if(mouse_down){
+          offsetx -= (evt.clientX - last_mouse_x)/(canvas.height*(1/3)**zoom);
+          offsety -= (evt.clientY - last_mouse_y)/(canvas.height*(1/3)**zoom);
+          last_mouse_x = evt.clientX;
+          last_mouse_y = evt.clientY;
+          gridx += Math.floor(offsetx)
+          gridy += Math.floor(offsety)
+          offsetx -= Math.floor(offsetx)
+          offsety -= Math.floor(offsety)
+        }
+      }
+      function mousewheel(evt){
+        zoom += evt.deltaY/1000;
+      }
+      canvas.addEventListener("mousedown",mousedown);
+      canvas.addEventListener("mouseup",mouseup);
+      canvas.addEventListener("mousemove",mousemove);
+      canvas.addEventListener("wheel",mousewheel);
+      window.onload = function(){
+        //setting the canvas render height and width to the correct values
+        
+        requestAnimationFrame(repaint);
+      }
+    </script>
+  </html>
