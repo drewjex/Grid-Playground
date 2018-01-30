@@ -1,0 +1,112 @@
+<html>
+    <head>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+        }
+        canvas { 
+            background:#fff; 
+            position: absolute;
+            top:0;
+            bottom:0;
+            left: 0;
+            right:0; 
+        }
+      </style>
+    </head>
+    <body>
+      <canvas></canvas>
+    </body>
+    <script>
+      var canvas = document.getElementsByTagName("canvas")[0];
+      var ctx = canvas.getContext("2d");
+      
+      var coordinates = [[0,0],[0,0],[0,0]]
+      var gridlevel = 0;
+      var offsetx = 0;
+      var offsety = 0;
+      var zoom = 0;
+      
+      var s = 8;
+
+      var mouse_down = false;
+      var last_mouse_x = 0;
+      var last_mouse_y = 0; 
+      function repaint(){
+        canvas.width = document.body.clientWidth;
+        canvas.height = document.body.clientHeight;//setting the canvas render height and width to the correct values
+        
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.translate(canvas.width/2,canvas.height/2); //make the center of the screen 0,0
+        ctx.scale(canvas.height,canvas.height);//make 1 canvas unit equal one grid unit
+        ctx.scale(s**zoom,s**zoom)//zoom to specified zoom level, where zoom level of 1 means 3 grid squares fit in the vertical area of the screen
+        ctx.translate(-offsetx,-offsety);//translate to offset
+        drawGrid([[0,0]])
+        drawGrid([[-1,0]])
+        drawGrid([[0,-1]])
+        drawGrid([[-1,-1]])
+        ctx.fillStyle = "blue";
+        drawGrid([[0,0],[0,0]])
+        drawGrid([[-1,0],[7,0]])
+        drawGrid([[-1,-1],[7,7]])
+        drawGrid([[0,-1],[0,7]])
+        //ctx.fillRect(-gridx,-gridy,1,1)//simulate rendering a different grid
+        //ctx.fillStyle = "black";
+        //ctx.fillRect(0,0,1,1);//simulate rendering the current grid
+        //ctx.fillStyle = "red";
+        //ctx.setTransform(1,0,0,1,0,0);
+        //ctx.fillRect(canvas.width/2-10,canvas.height/2-10,20,20);//reticle for visualization
+        requestAnimationFrame(repaint);
+      }
+      function drawGrid(coords){
+        //if(coords.length != gridlevel+1){
+        //  return;
+        //}
+        var x = 0;
+        var y = 0;
+        for(var i = 0; i < coords.length; i++){
+          x += (coords[i][0]-coordinates[i][0])*(s**(gridlevel-i))
+          y += (coords[i][1]-coordinates[i][1])*(s**(gridlevel-i))
+        }
+        ctx.fillRect(x,y,s**(gridlevel+1-coords.length),s**(gridlevel+1-coords.length))
+      }
+      function mousedown(evt){
+        if(evt.button == 0){
+          mouse_down = true;
+          last_mouse_x = evt.clientX;
+          last_mouse_y = evt.clientY;
+        }
+      }
+      function mouseup(evt){
+        if(evt.button == 0){
+          mouse_down = false;
+        }
+      }
+      function mousemove(evt){
+        if(mouse_down){
+          offsetx -= (evt.clientX - last_mouse_x)/(canvas.height*s**zoom);//adjust for current zoom level
+          offsety -= (evt.clientY - last_mouse_y)/(canvas.height*s**zoom);//adjust for current zoom level
+          last_mouse_x = evt.clientX;
+          last_mouse_y = evt.clientY;
+          gridx += Math.floor(offsetx)//Adjust the current grid square if offsetx gets outside of [0,1)
+          gridy += Math.floor(offsety)//Adjust the current grid square if offsety gets outside of [0,1)
+          offsetx -= Math.floor(offsetx)//Reset the offset if the grid square changed
+          offsety -= Math.floor(offsety)//Reset the offset if the grid square changed
+        }
+      }
+      function mousewheel(evt){
+        zoom += evt.deltaY/1000;//Change zoom level according to mouse wheel
+      }
+      canvas.addEventListener("mousedown",mousedown);
+      canvas.addEventListener("mouseup",mouseup);
+      canvas.addEventListener("mousemove",mousemove);
+      canvas.addEventListener("wheel",mousewheel);
+      window.onload = function(){
+        requestAnimationFrame(repaint);
+      }
+    </script>
+  </html>

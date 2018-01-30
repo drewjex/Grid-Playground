@@ -5,7 +5,7 @@ var express = require("express");
 var app = express();
 app.use('/', express.static(__dirname + '/'));
 
-app.get('/', (req, res) => res.sendFile("pg7.html", { root: __dirname }));
+app.get('/', (req, res) => res.sendFile("pg7.2.html", { root: __dirname }));
 
 //app.listen(port, host);
 
