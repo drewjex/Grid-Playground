@@ -1,0 +1,108 @@
+<html>
+  <head>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+  </body>
+  <script>
+
+      let canvas = document.getElementsByTagName("canvas")[0];
+      let ctx = canvas.getContext("2d");
+
+      let dragged = false;
+      let mouseDown = false;
+
+      let rectXPos = 55;
+      let rectYPos = 55;
+      let rectWidth = 120;
+      let rectHeight = 100;
+
+      let lastX = 55;
+      let lastY = 55;
+
+      let zoom = 1;
+
+      window.onload = (event) => {
+        canvas.width = document.body.clientWidth;
+        canvas.height = document.body.clientHeight;
+        requestAnimationFrame(repaint);
+      }
+
+      let repaint = () => {
+
+        let dx = 50;
+        let dy = 50;
+        
+        let x = 0;
+        let y = 0;
+        let w = canvas.width;
+        let h = canvas.height;
+        
+        let xy = 10;
+
+        ctx.lineWidth = 1;
+    
+        while (y < h) {
+          y = y + dy;
+          ctx.moveTo(x, y);
+          ctx.lineTo(w, y);        
+          xy += 10;  
+        }
+        
+        y = 0;  
+        xy = 10; 
+
+        while (x < w) {
+          x = x + dx;
+          ctx.moveTo(x, y);  
+          ctx.lineTo(x,h);      
+          xy += 10;  
+        }
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.strokeStyle='#000';
+        ctx.stroke(); 
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle='red';
+        ctx.strokeRect(rectXPos+(rectXPos/2) - (rectWidth*zoom/2), rectYPos+(rectYPos/2) -  (rectHeight*zoom/2), rectWidth*zoom, rectHeight*zoom);
+
+        requestAnimationFrame(repaint);
+      }
+
+      canvas.addEventListener("mousemove", evt => {
+        if (mouseDown) {
+          rectXPos += evt.offsetX - lastX; //still not taking into account center of object..?
+          rectYPos += evt.offsetY - lastY;
+        }
+        lastX = evt.offsetX;
+        lastY = evt.offsetY;
+      });
+
+      canvas.addEventListener("mousedown",evt => {
+        if(evt.button == 0){
+          mouseDown = true;
+        }
+      });
+
+      canvas.addEventListener("mouseup", evt => {
+        if(evt.button == 0){
+          mouseDown = false;
+        }
+      });
+
+      canvas.addEventListener("wheel", evt => {
+        zoom += evt.deltaY/1000;
+        console.log(zoom);
+      });
+
+  </script>
+</html>
