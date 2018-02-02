@@ -32,17 +32,15 @@
         let dragged = false;
         let mouseDown = false;
   
-        let rectXPos = 475;
-        let rectYPos = 475;
-        let rectWidth = 120;
-        let rectHeight = 100;
+        let rectXPos = 0;
+        let rectYPos = 0;
+        let rectWidth = canvas.width;
+        let rectHeight = canvas.height;
   
         let lastX = 0;
         let lastY = 0;
   
         let zoom = 1;
-
-        let scaleFactor = 1.1;
 
         let sizeRatio = 4;
         let size = 50/sizeRatio;
@@ -61,15 +59,22 @@
           canvas.height = document.body.clientHeight;
           miniMap.width = document.body.clientWidth/sizeRatio;
           miniMap.height = document.body.clientHeight/sizeRatio;
+
+          rectWidth = canvas.width;
+          rectHeight = canvas.height;
+
+          ctx.translate(rectWidth/2,rectHeight/2); //canvas.size doesn't match up with coordinates when drawing??
+          ctx.scale(sizeRatio,sizeRatio);
+
           requestAnimationFrame(repaintCanvas);
           requestAnimationFrame(repaintMiniMap);
         }
 
         let updateMiniMap = () => {
-            mmrectXPos = rectXPos/sizeRatio;
-            mmrectYPos = rectYPos/sizeRatio;
-            mmrectWidth = rectWidth/sizeRatio;
-            mmrectHeight = rectHeight/sizeRatio;
+            mmrectXPos = rectXPos/(sizeRatio*sizeRatio);
+            mmrectYPos = rectYPos/(sizeRatio*sizeRatio);
+            mmrectWidth = rectWidth/(sizeRatio*sizeRatio);
+            mmrectHeight = rectHeight/(sizeRatio*sizeRatio);
         }
   
         let repaintMiniMap = () => {
@@ -110,8 +115,8 @@
           mmctx.strokeStyle='#000';
           mmctx.stroke(); 
           
-          let xStart = mmrectXPos-(mmrectWidth/2) - (mmrectWidth*zoom/2);
-          let yStart = mmrectYPos-(mmrectHeight/2) -  (mmrectHeight*zoom/2);
+          let xStart = mmrectXPos-(mmrectWidth/2); //- (mmrectWidth*zoom/2);
+          let yStart = mmrectYPos-(mmrectHeight/2);// -  (mmrectHeight*zoom/2);
           let xEnd = xStart + (mmrectWidth*zoom);
           let yEnd = yStart + (mmrectHeight*zoom);
   
@@ -138,14 +143,14 @@
   
         let repaintCanvas = () => {
   
-            var p1 = ctx.transformedPoint(0,0);
-           var p2 = ctx.transformedPoint(canvas.width,canvas.height);
+          var p1 = ctx.transformedPoint(0,0);
+          var p2 = ctx.transformedPoint(canvas.width,canvas.height);
           ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
 
-          ctx.save();
-           ctx.setTransform(1,0,0,1,0,0);
-          ctx.clearRect(0,0,canvas.width,canvas.height);
-          ctx.restore();
+          // ctx.save();
+          // ctx.setTransform(1,0,0,1,0,0);
+          // ctx.clearRect(0,0,canvas.width,canvas.height);
+          // ctx.restore();
   
           let dx = 50;
           let dy = 50;
@@ -260,7 +265,7 @@
           var pt = ctx.transformedPoint(lastX,lastY);
           ctx.translate(pt.x,pt.y);
 
-          ctx.scale(zoom,zoom);
+          ctx.scale((evt.deltaY/1000),(evt.deltaY/1000));
           ctx.translate(-pt.x,-pt.y);
         });
 
