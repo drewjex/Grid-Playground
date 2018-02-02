@@ -70,7 +70,7 @@
           requestAnimationFrame(repaintMiniMap);
         }
 
-        let updateMiniMap = () => {
+        let updateMiniMap = (factor = 1) => {
             mmrectXPos = rectXPos/(sizeRatio*sizeRatio);
             mmrectYPos = rectYPos/(sizeRatio*sizeRatio);
             mmrectWidth = rectWidth/(sizeRatio*sizeRatio);
@@ -186,38 +186,9 @@
   
           ctx.strokeStyle='#000';
           ctx.stroke(); 
-  
-        //   let xStart = rectXPos-(rectWidth/2) - (rectWidth*zoom/2);
-        //   let yStart = rectYPos-(rectHeight/2) -  (rectHeight*zoom/2);
-        //   let xEnd = xStart + (rectWidth*zoom);
-        //   let yEnd = yStart + (rectHeight*zoom);
-  
-        //   let xMin = Math.floor(xStart/50);
-        //   let xMax = Math.ceil(xEnd/50);
-        //   let yMin = Math.floor(yStart/50);
-        //   let yMax = Math.ceil(yEnd/50);
-  
-        //   ctx.fillStyle='yellow';
-        //   ctx.strokeStyle= 'black';
-        //   for (let i=xMin; i<xMax; i++) {
-        //     for (let j=yMin; j<yMax; j++) {
-        //       ctx.fillRect(i*50, j*50, 50, 50);
-        //       ctx.strokeRect(i*50, j*50, 50, 50);
-        //     }
-        //   }
-  
-        //   ctx.lineWidth = 3;
-        //   ctx.strokeStyle='red';
-        //   ctx.strokeRect(xStart, yStart, rectWidth*zoom, rectHeight*zoom);
 
            var p1 = ctx.transformedPoint(0,0);
            var p2 = ctx.transformedPoint(canvas.width,canvas.height);
-        //   ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
-
-        //   ctx.save();
-           //ctx.setTransform(1,0,0,1,0,0);
-        //   ctx.clearRect(0,0,canvas.width,canvas.height);
-        //   ctx.restore();
   
           requestAnimationFrame(repaintCanvas);
         }
@@ -260,13 +231,14 @@
   
         canvas.addEventListener("wheel", evt => {
           zoom += evt.deltaY/1000;
-          updateMiniMap();
-
           var pt = ctx.transformedPoint(lastX,lastY);
           ctx.translate(pt.x,pt.y);
-
-          ctx.scale((evt.deltaY/1000),(evt.deltaY/1000));
+          var factor = Math.pow(1.1,evt.deltaY/1000*-1);
+          ctx.scale(factor,factor);
           ctx.translate(-pt.x,-pt.y);
+          rectXPos *= factor;
+          rectYPos *= factor;
+          updateMiniMap();
         });
 
         function trackTransforms(ctx) {
