@@ -52,6 +52,9 @@
 
         let draggedStart;
 
+        let leftCornerPt;
+        let rightCornerPt;
+
         trackTransforms(ctx);
   
         window.onload = (event) => {
@@ -63,18 +66,18 @@
           rectWidth = canvas.width;
           rectHeight = canvas.height;
 
-          ctx.translate(rectWidth/2,rectHeight/2); //canvas.size doesn't match up with coordinates when drawing??
+          ctx.translate(rectWidth/2,rectHeight/2); 
           ctx.scale(sizeRatio,sizeRatio);
 
           requestAnimationFrame(repaintCanvas);
           requestAnimationFrame(repaintMiniMap);
         }
 
-        let updateMiniMap = (factor = 1) => {
-            mmrectXPos = rectXPos/(sizeRatio*sizeRatio);
-            mmrectYPos = rectYPos/(sizeRatio*sizeRatio);
-            mmrectWidth = rectWidth/(sizeRatio*sizeRatio);
-            mmrectHeight = rectHeight/(sizeRatio*sizeRatio);
+        let updateMiniMap = () => {
+            mmrectXPos = leftCornerPt.x/sizeRatio;
+            mmrectYPos = leftCornerPt.y/sizeRatio;
+            mmrectWidth = (rightCornerPt.x-leftCornerPt.x)/sizeRatio;
+            mmrectHeight = (rightCornerPt.y-leftCornerPt.y)/sizeRatio;
         }
   
         let repaintMiniMap = () => {
@@ -115,10 +118,10 @@
           mmctx.strokeStyle='#000';
           mmctx.stroke(); 
           
-          let xStart = mmrectXPos-(mmrectWidth/2); //- (mmrectWidth*zoom/2);
-          let yStart = mmrectYPos-(mmrectHeight/2);// -  (mmrectHeight*zoom/2);
-          let xEnd = xStart + (mmrectWidth*zoom);
-          let yEnd = yStart + (mmrectHeight*zoom);
+          let xStart = mmrectXPos;
+          let yStart = mmrectYPos;
+          let xEnd = xStart + mmrectWidth; 
+          let yEnd = yStart + mmrectHeight;
   
           let xMin = Math.floor(xStart/size);
           let xMax = Math.ceil(xEnd/size);
@@ -136,7 +139,7 @@
   
           mmctx.lineWidth = 3;
           mmctx.strokeStyle='red';
-          mmctx.strokeRect(xStart, yStart, mmrectWidth*zoom, mmrectHeight*zoom);
+          mmctx.strokeRect(xStart, yStart, mmrectWidth, mmrectHeight);
 
           requestAnimationFrame(repaintMiniMap);
         }
@@ -146,11 +149,6 @@
           var p1 = ctx.transformedPoint(0,0);
           var p2 = ctx.transformedPoint(canvas.width,canvas.height);
           ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
-
-          // ctx.save();
-          // ctx.setTransform(1,0,0,1,0,0);
-          // ctx.clearRect(0,0,canvas.width,canvas.height);
-          // ctx.restore();
   
           let dx = 50;
           let dy = 50;
@@ -186,9 +184,6 @@
   
           ctx.strokeStyle='#000';
           ctx.stroke(); 
-
-           var p1 = ctx.transformedPoint(0,0);
-           var p2 = ctx.transformedPoint(canvas.width,canvas.height);
   
           requestAnimationFrame(repaintCanvas);
         }
@@ -213,6 +208,9 @@
           lastX = evt.offsetX;
           lastY = evt.offsetY;
 
+          leftCornerPt = ctx.transformedPoint(0,0);
+          rightCornerPt = ctx.transformedPoint(canvas.width, canvas.height);
+
           updateMiniMap();
         });
   
@@ -230,14 +228,18 @@
         });
   
         canvas.addEventListener("wheel", evt => {
-          zoom += evt.deltaY/1000;
+          zoom += evt.deltaY/200;
+
           var pt = ctx.transformedPoint(lastX,lastY);
+
           ctx.translate(pt.x,pt.y);
-          var factor = Math.pow(1.1,evt.deltaY/1000*-1);
+          var factor = Math.pow(1.1,evt.deltaY/200*-1);
           ctx.scale(factor,factor);
           ctx.translate(-pt.x,-pt.y);
-          rectXPos *= factor;
-          rectYPos *= factor;
+
+          leftCornerPt = ctx.transformedPoint(0,0);
+          rightCornerPt = ctx.transformedPoint(canvas.width, canvas.height);
+
           updateMiniMap();
         });
 
