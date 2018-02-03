@@ -1,0 +1,323 @@
+<html>
+  <head>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', 'Open Sans', 'Roboto', sans-serif;
+      }
+      .mini-map {
+        position: fixed;
+        bottom:10px;
+        right:10px;
+        z-index:1000;
+        background:white;
+        border: 3px solid gray;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+    <canvas class='mini-map'></canvas>
+  </body>
+  <script>
+
+      let canvas = document.getElementsByTagName("canvas")[0];
+      let miniMap = document.getElementsByTagName("canvas")[1];
+
+      let ctx = canvas.getContext("2d");
+      let mmctx = miniMap.getContext("2d");
+
+      let dragged = false;
+      let mouseDown = false;
+      let valid = true;
+
+      let rectXPos = 0;
+      let rectYPos = 0;
+      let rectWidth = canvas.width;
+      let rectHeight = canvas.height;
+
+      let lastX = 0;
+      let lastY = 0;
+
+      let zoom = 1;
+
+      let sizeRatio = 4;
+      let size = 50/sizeRatio;
+
+      let mmrectXPos = rectXPos/sizeRatio;
+      let mmrectYPos = rectYPos/sizeRatio;
+      let mmrectWidth = rectWidth/sizeRatio;
+      let mmrectHeight = rectHeight/sizeRatio;
+
+      let dragStart;
+
+      let leftCornerPt;
+      let rightCornerPt;
+
+      trackTransforms(ctx);
+
+      window.onload = (event) => {
+        canvas.width = document.body.clientWidth;
+        canvas.height = document.body.clientHeight;
+        miniMap.width = document.body.clientWidth/sizeRatio;
+        miniMap.height = document.body.clientHeight/sizeRatio;
+
+        rectWidth = canvas.width;
+        rectHeight = canvas.height;
+
+        leftCornerPt = ctx.transformedPoint(0,0);
+        rightCornerPt = ctx.transformedPoint(canvas.width, canvas.height);
+
+        ctx.translate(rectWidth/2-1000,rectHeight/2-1000); 
+        ctx.scale(sizeRatio,sizeRatio);
+
+        requestAnimationFrame(repaintCanvas);
+        requestAnimationFrame(repaintMiniMap);
+      }
+
+      let updateMiniMap = () => {
+          mmrectXPos = leftCornerPt.x/sizeRatio;
+          mmrectYPos = leftCornerPt.y/sizeRatio;
+          mmrectWidth = (rightCornerPt.x-leftCornerPt.x)/sizeRatio;
+          mmrectHeight = (rightCornerPt.y-leftCornerPt.y)/sizeRatio;
+      }
+
+      let repaintMiniMap = () => {
+        mmctx.clearRect(0,0,miniMap.width,miniMap.height);
+
+        let dx = size;
+        let dy = size;
+        
+        let x = 0;
+        let y = 0;
+        let w = miniMap.width;
+        let h = miniMap.height;
+        
+        let xy = 10;
+
+        mmctx.lineWidth = 1;
+        mmctx.beginPath(); 
+
+        //crosses
+        while (y < h) {
+          y = y + dy;
+          mmctx.moveTo(x, y);
+          mmctx.lineTo(w, y);        
+          xy += 10;  
+        }
+        
+        y = 0;  
+        xy = 10; 
+
+        //mains
+        while (x < w) {
+          x = x + dx;
+          mmctx.moveTo(x, y);  
+          mmctx.lineTo(x,h);      
+          xy += 10;  
+        }
+
+        mmctx.strokeStyle='#000';
+        mmctx.stroke(); 
+        
+        let xStart = mmrectXPos;
+        let yStart = mmrectYPos;
+        let xEnd = xStart + mmrectWidth; 
+        let yEnd = yStart + mmrectHeight;
+
+        let xMin = Math.floor(xStart/size);
+        let xMax = Math.ceil(xEnd/size);
+        let yMin = Math.floor(yStart/size);
+        let yMax = Math.ceil(yEnd/size);
+
+        mmctx.fillStyle='yellow';
+        mmctx.strokeStyle= 'black';
+        for (let i=xMin; i<xMax; i++) {
+          for (let j=yMin; j<yMax; j++) {
+              mmctx.fillRect(i*size, j*size, size, size);
+              mmctx.strokeRect(i*size, j*size, size, size);
+          }
+        }
+
+        mmctx.lineWidth = 3;
+        mmctx.strokeStyle='red';
+        mmctx.strokeRect(xStart, yStart, mmrectWidth, mmrectHeight);
+
+        requestAnimationFrame(repaintMiniMap);
+      }
+
+      let repaintCanvas = () => {
+
+        var p1 = ctx.transformedPoint(0,0);
+        var p2 = ctx.transformedPoint(canvas.width,canvas.height);
+        ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
+
+        let dx = 50;
+        let dy = 50;
+        
+        let x = 0;
+        let y = 0;
+        let w = canvas.width;
+        let h = canvas.height;
+        
+        let xy = 10;
+
+        ctx.lineWidth = 1;
+        ctx.beginPath(); 
+
+        //crosses
+        while (y < h) {
+          y = y + dy;
+          ctx.moveTo(x, y);
+          ctx.lineTo(w, y);        
+          xy += 10;  
+        }
+        
+        y = 0;  
+        xy = 10; 
+
+        //mains
+        while (x < w) {
+          x = x + dx;
+          ctx.moveTo(x, y);  
+          ctx.lineTo(x,h);      
+          xy += 10;  
+        }
+
+        ctx.strokeStyle='#000';
+        ctx.stroke(); 
+
+        requestAnimationFrame(repaintCanvas);
+      }
+
+      let getRandomColor = () => {
+            var letters = '0123456789ABCDEF'.split('');
+            var color = '#';
+            for (var i = 0; i < 6; i++ ) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+      canvas.addEventListener("mousemove", evt => {
+        if (mouseDown && valid) {
+          let pt = ctx.transformedPoint(lastX,lastY);
+          let transX = pt.x-dragStart.x;
+          let transY = pt.y-dragStart.y;
+          rectXPos -= evt.offsetX - lastX; 
+          rectYPos -= evt.offsetY - lastY;
+          // if (leftCornerPt.x < 0) {
+          //   transX = leftCornerPt.x;
+          //   valid = false;
+          // } 
+          ctx.translate(transX,transY);
+        }
+
+        // if (leftCornerPt.x == 0) {
+        //   valid = true;
+        // }
+
+        lastX = evt.offsetX;
+        lastY = evt.offsetY;
+
+        leftCornerPt = ctx.transformedPoint(0,0);
+        rightCornerPt = ctx.transformedPoint(canvas.width, canvas.height);
+
+        updateMiniMap();
+      });
+
+      canvas.addEventListener("mousedown",evt => {
+        if(evt.button == 0){
+          mouseDown = true;
+          dragStart = ctx.transformedPoint(lastX,lastY);
+        }
+      });
+
+      canvas.addEventListener("mouseup", evt => {
+        if(evt.button == 0){
+          mouseDown = false;
+        }
+      });
+
+      canvas.addEventListener("wheel", evt => {
+        zoom += evt.deltaY/200;
+
+        var pt = ctx.transformedPoint(lastX,lastY);
+
+        ctx.translate(pt.x,pt.y);
+        var factor = Math.pow(1.1,evt.deltaY/200*-1);
+        ctx.scale(factor,factor);
+        ctx.translate(-pt.x,-pt.y);
+
+        leftCornerPt = ctx.transformedPoint(0,0);
+        rightCornerPt = ctx.transformedPoint(canvas.width, canvas.height);
+
+        updateMiniMap();
+      });
+
+      function trackTransforms(ctx) {
+          var svg = document.createElementNS("http://www.w3.org/2000/svg",'svg');
+          var xform = svg.createSVGMatrix();
+          ctx.getTransform = function(){ return xform; };
+
+          var savedTransforms = [];
+          var save = ctx.save;
+          ctx.save = function(){
+              savedTransforms.push(xform.translate(0,0));
+              return save.call(ctx);
+          };
+      
+          var restore = ctx.restore;
+          ctx.restore = function(){
+          xform = savedTransforms.pop();
+          return restore.call(ctx);
+              };
+
+          var scale = ctx.scale;
+          ctx.scale = function(sx,sy){
+          xform = xform.scaleNonUniform(sx,sy);
+          return scale.call(ctx,sx,sy);
+              };
+      
+          var rotate = ctx.rotate;
+          ctx.rotate = function(radians){
+              xform = xform.rotate(radians*180/Math.PI);
+              return rotate.call(ctx,radians);
+          };
+      
+          var translate = ctx.translate;
+          ctx.translate = function(dx,dy){
+              xform = xform.translate(dx,dy);
+              return translate.call(ctx,dx,dy);
+          };
+      
+          var transform = ctx.transform;
+          ctx.transform = function(a,b,c,d,e,f){
+              var m2 = svg.createSVGMatrix();
+              m2.a=a; m2.b=b; m2.c=c; m2.d=d; m2.e=e; m2.f=f;
+              xform = xform.multiply(m2);
+              return transform.call(ctx,a,b,c,d,e,f);
+          };
+      
+          var setTransform = ctx.setTransform;
+          ctx.setTransform = function(a,b,c,d,e,f){
+              xform.a = a;
+              xform.b = b;
+              xform.c = c;
+              xform.d = d;
+              xform.e = e;
+              xform.f = f;
+              return setTransform.call(ctx,a,b,c,d,e,f);
+          };
+      
+          var pt  = svg.createSVGPoint();
+          ctx.transformedPoint = function(x,y){
+              pt.x=x; pt.y=y;
+              return pt.matrixTransform(xform.inverse());
+          }
+      }
+
+  </script>
+</html>
