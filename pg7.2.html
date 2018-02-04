@@ -92,16 +92,50 @@
           offsety -= (evt.clientY - last_mouse_y)/(canvas.height*(s)**zoom);//adjust for current zoom level
           last_mouse_x = evt.clientX;
           last_mouse_y = evt.clientY;
-          gridx += Math.floor(offsetx)//Adjust the current grid square if offsetx gets outside of [0,1)
-          gridy += Math.floor(offsety)//Adjust the current grid square if offsety gets outside of [0,1)
-          offsetx -= Math.floor(offsetx)//Reset the offset if the grid square changed
-          offsety -= Math.floor(offsety)//Reset the offset if the grid square changed
+          updateCoords();
         }
       }
       function mousewheel(evt){
         zoom -= evt.deltaY/1000;//Change zoom level according to mouse wheel
         gridlevel += Math.floor(zoom);
+        offsetx *= (s)**(Math.floor(zoom));
+        offsety *= (s)**(Math.floor(zoom));
         zoom -= Math.floor(zoom);
+        updateCoords();
+      }
+      function updateCoords(){
+        try{
+          coordinates[gridlevel][0] += Math.floor(offsetx)//Adjust the current grid square if offsetx gets outside of [0,1)
+          coordinates[gridlevel][1] += Math.floor(offsety)//Adjust the current grid square if offsety gets outside of [0,1)
+          offsetx -= Math.floor(offsetx)//Reset the offset if the grid square changed
+          offsety -= Math.floor(offsety)//Reset the offset if the grid square changed
+        }
+        catch(e){
+
+        }
+        try{
+          for(var i = gridlevel+1; i < coordinates.length; i++){
+            offsetx += coordinates[i][0]*(s)**(gridlevel-i);
+            offsety += coordinates[i][1]*(s)**(gridlevel-i);
+            coordinates[i][0] = 0;
+            coordinates[i][1] = 0;
+          }
+        }
+        catch(e){
+          
+        }
+        for(var i = coordinates.length-1; i >= 0; i--){
+          try{
+          coordinates[i-1][0] += Math.floor(coordinates[i][0]/s)
+          coordinates[i-1][1] += Math.floor(coordinates[i][1]/s)
+          coordinates[i][0] -= Math.floor(coordinates[i][0]/s)*s
+          coordinates[i][1] -= Math.floor(coordinates[i][1]/s)*s
+          }
+          catch(e){
+
+          }
+        }
+        console.log(coordinates[0]+","+coordinates[1]+","+coordinates[2]+":"+offsetx+","+offsety)
       }
       canvas.addEventListener("mousedown",mousedown);
       canvas.addEventListener("mouseup",mouseup);
